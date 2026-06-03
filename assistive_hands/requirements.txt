@@ -1,0 +1,12 @@
+Flask
+opencv-python
+mediapipe
+numpy
+scipy
+python-dotenv
+Werkzeug
+Jinja2
+click
+Pillow
+scikit-learn
+pyautogui

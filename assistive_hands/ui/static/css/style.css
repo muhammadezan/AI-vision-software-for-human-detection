@@ -1,0 +1,697 @@
+/* ========== CSS Variables & Theme ========== */
+:root {
+    /* Colors */
+    --primary-color: #2563eb;
+    --primary-dark: #1e40af;
+    --primary-light: #3b82f6;
+    --secondary-color: #10b981;
+    --danger-color: #ef4444;
+    --warning-color: #f59e0b;
+    --success-color: #10b981;
+    --info-color: #06b6d4;
+    
+    /* Grays */
+    --gray-50: #f9fafb;
+    --gray-100: #f3f4f6;
+    --gray-200: #e5e7eb;
+    --gray-300: #d1d5db;
+    --gray-400: #9ca3af;
+    --gray-500: #6b7280;
+    --gray-600: #4b5563;
+    --gray-700: #374151;
+    --gray-800: #1f2937;
+    --gray-900: #111827;
+    
+    /* Spacing */
+    --spacing-xs: 0.25rem;
+    --spacing-sm: 0.5rem;
+    --spacing-md: 1rem;
+    --spacing-lg: 1.5rem;
+    --spacing-xl: 2rem;
+    --spacing-2xl: 3rem;
+    
+    /* Typography */
+    --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+    --font-mono: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+    --text-size-sm: 0.875rem;
+    --text-size-base: 1rem;
+    --text-size-lg: 1.125rem;
+    --text-size-xl: 1.25rem;
+    --text-size-2xl: 1.5rem;
+    --text-size-3xl: 1.875rem;
+    --text-size-4xl: 2.25rem;
+    --line-height: 1.6;
+    
+    /* Shadows */
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    
+    /* Border Radius */
+    --radius-sm: 0.375rem;
+    --radius-md: 0.5rem;
+    --radius-lg: 0.75rem;
+    --radius-xl: 1rem;
+    --radius-2xl: 1.5rem;
+    
+    /* Transitions */
+    --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-base: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Dark Mode */
+body.dark-mode {
+    --bg-primary: var(--gray-900);
+    --bg-secondary: var(--gray-800);
+    --bg-tertiary: var(--gray-700);
+    --text-primary: var(--gray-50);
+    --text-secondary: var(--gray-300);
+    --border-color: var(--gray-700);
+}
+
+/* Light Mode */
+body {
+    --bg-primary: #ffffff;
+    --bg-secondary: var(--gray-50);
+    --bg-tertiary: var(--gray-100);
+    --text-primary: var(--gray-900);
+    --text-secondary: var(--gray-600);
+    --border-color: var(--gray-200);
+}
+
+/* ///////////////////////////////////////// */
+
+/* THIS IS FOR HIDDING THE GREEN CIRCLE O SHAPE CURSOR CUZ YOU ALREADY HAVE */
+/* THE SYSTEM CURSOR, SO THAT ONLY CHANGE IN CSS IS FOR ABOUT ADDING THIS */
+
+#gazeCursor, .gaze-cursor {
+    display: none !important;
+}
+
+/* ///////////////////////////////////////// */
+
+/* ========== Global Styles ========== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: var(--font-family);
+    font-size: var(--text-size-base);
+    line-height: var(--line-height);
+    color: var(--text-primary);
+    background-color: var(--bg-primary);
+    transition: background-color var(--transition-base), color var(--transition-base);
+}
+
+:root {
+    --primary-color: #007bff;
+    --secondary-color: #6c757d;
+    --success-color: #28a745;
+    --danger-color: #dc3545;
+    --warning-color: #ffc107;
+    --info-color: #17a2b8;
+    --light-color: #f8f9fa;
+    --dark-color: #343a40;
+    
+    --text-size: 18px;
+    --text-size-heading: 24px;
+    --button-size: 60px;
+    --border-radius: 8px;
+}
+
+* {
+    font-size: var(--text-size);
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f5f5f5;
+    color: #333;
+}
+
+/* Navbar */
+.navbar-brand {
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+/* Cards */
+.card {
+    border: 2px solid #e9ecef;
+    border-radius: var(--border-radius);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.card-header {
+    border-bottom: 2px solid rgba(0, 0, 0, 0.125);
+    font-weight: 600;
+}
+
+/* Metrics */
+.metric-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.metric-value {
+    font-size: 2.5rem;
+    font-weight: bold;
+    margin: 10px 0;
+}
+
+/* Camera */
+.camera-container {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    background: #000;
+    border-radius: var(--border-radius);
+    overflow: hidden;
+}
+
+.camera-container img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.gaze-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+.gaze-cursor {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border: 3px solid #00ff00;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+    transition: all 0.1s ease;
+}
+
+/* Buttons */
+.btn {
+    font-size: var(--text-size);
+    font-weight: 600;
+    padding: 12px 24px;
+    border-radius: var(--border-radius);
+    transition: all 0.3s ease;
+    border: none;
+}
+
+.btn:hover, .btn:focus {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.btn-lg {
+    font-size: 1.25rem;
+    padding: 15px 30px;
+    min-height: 60px;
+}
+
+/* Keyboard */
+.keyboard-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.keyboard-row {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+}
+
+.keyboard-btn {
+    flex: 1;
+    max-width: 60px;
+    min-height: 60px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    background-color: var(--light-color);
+    border: 2px solid #ddd;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: #333;
+}
+
+.keyboard-btn:hover {
+    background-color: var(--primary-color);
+    color: white;
+    transform: scale(1.1);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.keyboard-btn.active {
+    background-color: var(--success-color);
+    color: white;
+    transform: scale(0.95);
+}
+
+.keyboard-btn.hovered {
+    background-color: var(--info-color);
+    color: white;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+}
+
+/* Dwell-active: pulsing glow while gaze dwells on key */
+@keyframes dwellPulse {
+    0%   { box-shadow: 0 0 0 0 rgba(0, 200, 100, 0.6); }
+    50%  { box-shadow: 0 0 0 10px rgba(0, 200, 100, 0.2); }
+    100% { box-shadow: 0 0 0 0 rgba(0, 200, 100, 0); }
+}
+
+.keyboard-btn.dwell-active {
+    background-color: #20c997;
+    color: white;
+    border-color: #20c997;
+    animation: dwellPulse 0.5s ease infinite;
+    transform: scale(1.08);
+}
+
+.dwell-timer-container {
+    margin-top: 20px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.dwell-timer {
+    width: 0;
+    height: 8px;
+    background: linear-gradient(90deg, var(--info-color), var(--success-color));
+    border-radius: 4px;
+    transition: width 0.05s linear;
+}
+
+/* Gesture Controls */
+.gesture-controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.gesture-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.gesture-btn {
+    padding: 20px;
+    border: 2px solid var(--secondary-color);
+    border-radius: var(--border-radius);
+    background-color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    font-size: 1rem;
+    min-height: 100px;
+    justify-content: center;
+}
+
+.gesture-btn i {
+    font-size: 2rem;
+}
+
+.gesture-btn:hover {
+    background-color: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+    transform: scale(1.05);
+}
+
+/* System Status */
+.system-status {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.status-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    background-color: #f8f9fa;
+    border-radius: var(--border-radius);
+    border-left: 4px solid var(--secondary-color);
+}
+
+.status-label {
+    font-weight: 600;
+}
+
+.status-badge {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.status-connected {
+    background-color: var(--success-color);
+    color: white;
+    border-left-color: var(--success-color);
+}
+
+.status-active {
+    background-color: var(--info-color);
+    color: white;
+    border-left-color: var(--info-color);
+}
+
+.status-calibrated {
+    background-color: var(--success-color);
+    color: white;
+    border-left-color: var(--success-color);
+}
+
+.status-standby {
+    background-color: var(--warning-color);
+    color: #333;
+    border-left-color: var(--warning-color);
+}
+
+/* Calibration */
+.calibration-container {
+    position: relative;
+    width: 100%;
+    background: transparent;  /* Transparent so camera shows */
+    aspect-ratio: 4 / 3;
+    border-radius: var(--border-radius);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+#calibrationCameraFeed {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover;
+    z-index: 1 !important;
+    display: block;
+}
+
+#calibrationCanvas {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 100%;
+    display: block;
+    background: transparent;
+    cursor: crosshair;
+    z-index: 2 !important;
+}
+
+.calibration-status {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    color: white;
+    z-index: 10;
+}
+
+.calibration-status h3 {
+    font-size: 2rem;
+    margin-bottom: 10px;
+}
+
+/* Quality Metrics */
+.quality-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.quality-item:last-child {
+    border-bottom: none;
+}
+
+/* Text Output */
+.text-output {
+    background-color: #f8f9fa;
+    border: 2px solid #ddd;
+    border-radius: var(--border-radius);
+    padding: 20px;
+    min-height: 120px;
+}
+
+.display-text {
+    font-size: 1.3rem;
+    line-height: 1.6;
+    margin: 0;
+    word-wrap: break-word;
+}
+
+/* Phrases */
+.phrases-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.phrase-btn {
+    padding: 12px 16px;
+    background-color: white;
+    border: 2px solid var(--primary-color);
+    border-radius: var(--border-radius);
+    color: var(--primary-color);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: left;
+}
+
+.phrase-btn:hover {
+    background-color: var(--primary-color);
+    color: white;
+    transform: translateX(5px);
+}
+
+/* Setup */
+.setup-progress {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 20px 0;
+}
+
+.setup-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    position: relative;
+}
+
+.setup-step::after {
+    content: '';
+    position: absolute;
+    top: 25px;
+    left: 50%;
+    width: 100%;
+    height: 3px;
+    background-color: #ddd;
+    z-index: -1;
+}
+
+.setup-step:last-child::after {
+    display: none;
+}
+
+.step-number {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background-color: #ddd;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 1.2rem;
+    transition: all 0.3s ease;
+}
+
+.setup-step.active .step-number {
+    background-color: var(--primary-color);
+    box-shadow: 0 0 20px rgba(0, 123, 255, 0.5);
+}
+
+.step-label {
+    font-weight: 600;
+    text-align: center;
+    font-size: 0.9rem;
+}
+
+.setup-content {
+    display: none;
+}
+
+.setup-content.active {
+    display: block;
+}
+
+/* Profile Picture */
+.profile-picture-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+}
+
+.profile-picture {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    border: 3px solid var(--primary-color);
+    object-fit: cover;
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation: none !important;
+        transition: none !important;
+    }
+}
+
+@media (prefers-contrast: more) {
+    :root {
+        --primary-color: #0051ba;
+        --secondary-color: #404040;
+    }
+    
+    .card {
+        border-width: 3px;
+    }
+}
+
+/* Dark Mode */
+body.dark-mode {
+    background-color: #1a1a1a;
+    color: #f0f0f0;
+}
+
+body.dark-mode .card {
+    background-color: #2a2a2a;
+    border-color: #444;
+    color: #f0f0f0;
+}
+
+body.dark-mode .text-output {
+    background-color: #2a2a2a;
+    border-color: #444;
+    color: #f0f0f0;
+}
+
+body.dark-mode .form-control,
+body.dark-mode .form-select {
+    background-color: #2a2a2a;
+    border-color: #444;
+    color: #f0f0f0;
+}
+
+/* High Contrast Mode */
+body.high-contrast {
+    --primary-color: #000;
+    --secondary-color: #000;
+    background-color: #fff;
+    color: #000;
+}
+
+body.high-contrast .card {
+    border-color: #000;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .keyboard-row {
+        gap: 4px;
+    }
+    
+    .keyboard-btn {
+        max-width: 100%;
+        min-height: 50px;
+    }
+    
+    .gesture-controls {
+        grid-template-columns: 1fr;
+    }
+    
+    .metric-value {
+        font-size: 2rem;
+    }
+}
+
+@media (max-width: 576px) {
+    :root {
+        --text-size: 16px;
+        --button-size: 50px;
+    }
+    
+    .keyboard-btn {
+        min-height: 45px;
+    }
+    
+    .metric-card {
+        margin-bottom: 10px;
+    }
+}
+
+/* Focus Styles for Accessibility */
+.btn:focus,
+.keyboard-btn:focus,
+.gesture-btn:focus {
+    outline: 3px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
+/* Print Styles */
+@media print {
+    body {
+        background-color: white;
+    }
+    
+    .navbar, .btn {
+        display: none;
+    }
+}

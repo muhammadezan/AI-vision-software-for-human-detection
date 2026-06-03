@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AssistiveHands - Debug Console</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <style>
+        body {
+            background: #1e1e1e;
+            color: #e0e0e0;
+            font-family: 'Courier New', monospace;
+        }
+        .debug-panel {
+            background: #2d2d2d;
+            border: 1px solid #444;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+        .status-box {
+            background: #1e1e1e;
+            border-left: 4px solid #0d6efd;
+            padding: 10px;
+            margin: 5px 0;
+            font-size: 14px;
+        }
+        .status-box.success {
+            border-left-color: #28a745;
+            color: #28a745;
+        }
+        .status-box.warning {
+            border-left-color: #ffc107;
+            color: #ffc107;
+        }
+        .status-box.danger {
+            border-left-color: #dc3545;
+            color: #dc3545;
+        }
+        .log-window {
+            background: #000;
+            border: 1px solid #444;
+            padding: 10px;
+            height: 200px;
+            overflow-y: auto;
+            font-size: 12px;
+            margin: 10px 0;
+        }
+        .log-line {
+            color: #0f0;
+            font-weight: bold;
+            line-height: 1.4;
+        }
+        .gaze-display {
+            background: #0a0a0a;
+            border: 2px solid #0f0;
+            padding: 20px;
+            text-align: center;
+            font-size: 24px;
+            color: #0f0;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body class="p-4">
+    <div class="container-fluid">
+        <h1 class="mb-4">🔧 AssistiveHands Debug Console</h1>
+
+        <!-- System Status -->
+        <div class="debug-panel">
+            <h4>System Status</h4>
+            <div id="systemStatus"></div>
+        </div>
+
+        <!-- Calibration Status -->
+        <div class="debug-panel">
+            <h4>Calibration</h4>
+            <div id="calibrationStatus"></div>
+        </div>
+
+        <!-- Cursor Control Status -->
+        <div class="debug-panel">
+            <h4>Cursor Control</h4>
+            <div id="cursorStatus"></div>
+            <button class="btn btn-primary btn-sm mt-2" onclick="testCursor()">Test Cursor Movement</button>
+        </div>
+
+        <!-- Live Gaze Display -->
+        <div class="debug-panel">
+            <h4>Live Gaze Tracking</h4>
+            <div class="gaze-display">
+                <div>Gaze Normalized: <span id="gazeNorm">[0.5, 0.5]</span></div>
+                <div style="font-size: 18px; margin-top: 10px;">Screen Pixels: <span id="gazeScreen">[960, 540]</span></div>
+                <div style="font-size: 12px; color: #888; margin-top: 10px;">Face: <span id="faceStatus">❌ Not Detected</span></div>
+            </div>
+        </div>
+
+        <!-- Logs -->
+        <div class="debug-panel">
+            <h4>Live Log</h4>
+            <div class="log-window" id="logWindow"></div>
+        </div>
+
+        <!-- Test Controls -->
+        <div class="debug-panel">
+            <h4>Manual Test</h4>
+            <button class="btn btn-success me-2" onclick="startGazeMonitoring()">Start Gaze Monitoring</button>
+            <button class="btn btn-warning me-2" onclick="stopGazeMonitoring()">Stop Monitoring</button>
+            <button class="btn btn-danger" onclick="clearLogs()">Clear Logs</button>
+        </div>
+    </div>
+
+    <script>
+        const api = {
+            get: async (url) => {
+                const response = await fetch(url);
+                return response.json();
+            },
+            post: async (url, data) => {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                return response.json();
+            }
+        };
+
+        let monitoringActive = false;
+        let monitoringInterval = null;
+
+        function log(message) {
+            const logWindow = document.getElementById('logWindow');
+            const timestamp = new Date().toLocaleTimeString();
+            const logLine = document.createElement('div');
+            logLine.className = 'log-line';
+            logLine.textContent = `[${timestamp}] ${message}`;
+            logWindow.appendChild(logLine);
+            logWindow.scrollTop = logWindow.scrollHeight;
+            
+            // Keep only last 50 lines
+            const lines = logWindow.querySelectorAll('.log-line');
+            if (lines.length > 50) {
+                lines[0].remove();
+            }
+        }
+
+        function clearLogs() {
+            document.getElementById('logWindow').innerHTML = '';
+            log('Logs cleared');
+        }
+
+        function updateStatus(elementId, message, type = 'info') {
+            const el = document.getElementById(elementId);
+            const statusBox = document.createElement('div');
+            statusBox.className = `status-box ${type}`;
+            statusBox.textContent = message;
+            el.appendChild(statusBox);
+            
+            // Keep only last 3 items
+            const boxes = el.querySelectorAll('.status-box');
+            if (boxes.length > 3) {
+                boxes[0].remove();
+            }
+        }
+
+        async function checkSystemStatus() {
+            try {
+                const response = await api.get('/api/gaze/current');
+                if (response.status === 'success') {
+                    updateStatus('systemStatus', '✓ Camera running', 'success');
+                } else {
+                    updateStatus('systemStatus', '⚠ Camera not running', 'warning');
+                }
+            } catch (e) {
+                updateStatus('systemStatus', '❌ Error: ' + e.message, 'danger');
+            }
+        }
+
+        async function checkCalibration() {
+            try {
+                const response = await api.get('/api/test/calibration');
+                if (response.status === 'success') {
+                    updateStatus('calibrationStatus', 
+                        `✓ Loaded | Enabled: ${response.calibration_enabled} | Matrix: ${response.calibration_matrix_loaded}`, 
+                        'success');
+                } else {
+                    updateStatus('calibrationStatus', '❌ ' + response.message, 'danger');
+                }
+            } catch (e) {
+                updateStatus('calibrationStatus', '❌ Error: ' + e.message, 'danger');
+            }
+        }
+
+        async function checkCursorControl() {
+            try {
+                const response = await api.get('/api/test/cursor-status');
+                if (response.cursor_enabled) {
+                    updateStatus('cursorStatus', 
+                        `✓ Cursor Enabled | Test: ${response.test_movement ? '✓' : '❌'}`, 
+                        'success');
+                } else {
+                    updateStatus('cursorStatus', '❌ Cursor disabled - needs admin & pyautogui', 'danger');
+                }
+            } catch (e) {
+                updateStatus('cursorStatus', '❌ Error: ' + e.message, 'danger');
+            }
+        }
+
+        async function testCursor() {
+            log('Testing cursor movement...');
+            try {
+                const response = await api.post('/api/cursor/move', { x: 100, y: 100 });
+                if (response.status === 'success') {
+                    log('✓ Cursor moved to (100, 100)');
+                } else {
+                    log('❌ Cursor move failed: ' + response.message);
+                }
+            } catch (e) {
+                log('❌ Error: ' + e.message);
+            }
+        }
+
+        function startGazeMonitoring() {
+            if (monitoringActive) return;
+            monitoringActive = true;
+            log('Starting gaze monitoring...');
+            
+            monitoringInterval = setInterval(async () => {
+                try {
+                    const response = await api.get('/api/gaze/current');
+                    if (response.status === 'success') {
+                        const norm = response.gaze_normalized;
+                        const screen = response.gaze_screen;
+                        
+                        document.getElementById('gazeNorm').textContent = 
+                            `[${norm.x.toFixed(3)}, ${norm.y.toFixed(3)}]`;
+                        document.getElementById('gazeScreen').textContent = 
+                            `[${screen.x}, ${screen.y}]`;
+                        document.getElementById('faceStatus').textContent = 
+                            response.face_detected ? '✓ Detected' : '❌ Not Detected';
+                        
+                        // Log every 10 updates
+                        if (!startGazeMonitoring.counter) startGazeMonitoring.counter = 0;
+                        startGazeMonitoring.counter++;
+                        if (startGazeMonitoring.counter % 10 === 0) {
+                            log(`Gaze: [${norm.x.toFixed(3)}, ${norm.y.toFixed(3)}] → Screen: [${screen.x}, ${screen.y}]`);
+                        }
+                    }
+                } catch (e) {
+                    log('Error: ' + e.message);
+                }
+            }, 100);
+        }
+
+        function stopGazeMonitoring() {
+            if (!monitoringActive) return;
+            monitoringActive = false;
+            clearInterval(monitoringInterval);
+            log('Stopped gaze monitoring');
+        }
+
+        // Initial checks
+        window.addEventListener('DOMContentLoaded', () => {
+            log('Debug console initialized');
+            checkSystemStatus();
+            checkCalibration();
+            checkCursorControl();
+        });
+    </script>
+</body>
+</html>
+

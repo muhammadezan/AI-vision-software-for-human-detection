@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AssistiveHands - Calibration</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="bg-dark">
+    <div class="container-fluid p-0">
+        <!-- Header -->
+        <div class="row g-0">
+            <div class="col-12 bg-primary text-white p-3">
+                <h1 class="mb-0"><i class="fas fa-crosshairs"></i> Gaze Calibration</h1>
+            </div>
+        </div>
+
+        <div class="row g-0">
+            <!-- Calibration Canvas with Camera Feed -->
+            <div class="col-lg-9">
+                <div class="calibration-container" style="position:relative; width:100%; height:75vh; background:#111; overflow:hidden;">
+                    <!-- Camera Feed Behind Canvas -->
+                    <img id="calibrationCameraFeed"
+                         src="/camera_feed"
+                         alt="Camera Feed"
+                         style="position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover; z-index:1;"
+                         onerror="this.style.opacity='0.3';">
+                    <!-- Calibration Canvas Overlay -->
+                    <canvas id="calibrationCanvas"
+                            style="position:absolute; top:0; left:0; width:100%; height:100%; z-index:2; cursor:crosshair;">
+                    </canvas>
+                    <div id="calibrationStatus" class="calibration-status" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); text-align:center; color:white; z-index:3;">
+                        <h3>Loading Camera Feed...</h3>
+                        <p id="statusMessage">Please wait for camera to initialize</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Control Panel -->
+            <div class="col-lg-3 bg-dark text-white p-4">
+                <!-- Progress Indicator -->
+                <div class="card bg-secondary mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title">Progress</h5>
+                        <div class="progress mb-2" style="height: 25px;">
+                            <div id="progressBar" class="progress-bar bg-success" role="progressbar" 
+                                 style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="9">
+                                <span id="progressText">0/9</span>
+                            </div>
+                        </div>
+                        <small class="text-muted">Points Calibrated</small>
+                    </div>
+                </div>
+
+                <!-- Instructions -->
+                <div class="card bg-secondary mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title">Instructions</h5>
+                        <ol class="small mb-0">
+                            <li>Look at the target point</li>
+                            <li>Keep your head still</li>
+                            <li>Wait for point to complete</li>
+                            <li>Move to next point</li>
+                        </ol>
+                    </div>
+                </div>
+
+                <!-- Settings -->
+                <div class="card bg-secondary mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title">Calibration Settings</h5>
+                        <div class="mb-3">
+                            <label for="sensitivitySlider" class="form-label">Sensitivity</label>
+                            <input type="range" class="form-range" id="sensitivitySlider" 
+                                   min="0.1" max="2" step="0.1" value="1">
+                            <small class="text-muted">Adjust detection sensitivity</small>
+                        </div>
+                        <div class="mb-3">
+                            <label for="dwellTimeSlider" class="form-label">Dwell Time (sec)</label>
+                            <input type="range" class="form-range" id="dwellTimeSlider" 
+                                   min="0.5" max="3" step="0.1" value="1">
+                            <small class="text-muted">Time to focus on point</small>
+                        </div>
+                        <div>
+                            <label for="pointSizeSlider" class="form-label">Point Size</label>
+                            <input type="range" class="form-range" id="pointSizeSlider" 
+                                   min="20" max="60" step="5" value="40">
+                            <small class="text-muted">Size of calibration points</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quality Feedback -->
+                <div class="card bg-secondary mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title">Detection Quality</h5>
+                        <div id="qualityMetrics">
+                            <div class="quality-item">
+                                <span>Face Detection:</span>
+                                <span id="faceQuality" class="badge bg-success">✓</span>
+                            </div>
+                            <div class="quality-item">
+                                <span>Eye Tracking:</span>
+                                <span id="eyeQuality" class="badge bg-success">✓</span>
+                            </div>
+                            <div class="quality-item">
+                                <span>Gaze Accuracy:</span>
+                                <span id="gazeQuality" class="badge bg-warning">⚠</span>
+                            </div>
+                            <div class="quality-item">
+                                <span>Stability:</span>
+                                <span id="stabilityQuality" class="badge bg-success">✓</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Control Buttons -->
+                <div class="d-grid gap-2">
+                    <button class="btn btn-success btn-lg" id="startCalibrationBtn">
+                        <i class="fas fa-play"></i> Start Calibration
+                    </button>
+                    <button class="btn btn-warning btn-lg" id="pauseCalibrationBtn">
+                        <i class="fas fa-pause"></i> Pause
+                    </button>
+                    <button class="btn btn-danger btn-lg" id="cancelCalibrationBtn">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="{{ url_for('static', filename='js/utils.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/calibration.js') }}"></script>
+</body>
+</html>
+

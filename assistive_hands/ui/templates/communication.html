@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AssistiveHands - Communication</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-hand-holding"></i> AssistiveHands
+            </a>
+            <span class="navbar-text text-white ms-auto">
+                <strong>Gaze Control Active</strong>
+            </span>
+        </div>
+    </nav>
+
+    <div class="container-fluid p-3">
+        <div class="row">
+            <!-- Text Output -->
+            <div class="col-lg-9">
+                <div class="card mb-3">
+                    <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Text Output</h5>
+                        <div>
+                            <button class="btn btn-sm btn-success" id="speakBtn" title="Speak text">
+                                <i class="fas fa-volume-up"></i> Speak
+                            </button>
+                            <button class="btn btn-sm btn-danger" id="clearBtn" title="Clear text">
+                                <i class="fas fa-trash"></i> Clear
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div id="textOutput" class="text-output">
+                            <p id="displayText" class="display-text">Hello, how are you today? I would like to communicate with you.</p>
+                            <small class="text-muted" id="charCount">Character count: 68</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Gaze-Controlled Keyboard -->
+                <div class="card">
+                    <div class="card-header bg-secondary text-white">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">Gaze-Controlled Keyboard</h5>
+                            <span class="badge bg-success" id="gazeStatusBadge">Gaze Active</span>
+                        </div>
+                    </div>
+                    <div class="card-body keyboard-container">
+                        <div class="keyboard-row">
+                            <button class="keyboard-btn" data-key="Q">Q</button>
+                            <button class="keyboard-btn" data-key="W">W</button>
+                            <button class="keyboard-btn" data-key="E">E</button>
+                            <button class="keyboard-btn" data-key="R">R</button>
+                            <button class="keyboard-btn" data-key="T">T</button>
+                            <button class="keyboard-btn" data-key="Y">Y</button>
+                            <button class="keyboard-btn" data-key="U">U</button>
+                            <button class="keyboard-btn" data-key="I">I</button>
+                            <button class="keyboard-btn" data-key="O">O</button>
+                            <button class="keyboard-btn" data-key="P">P</button>
+                        </div>
+                        
+                        <div class="keyboard-row">
+                            <button class="keyboard-btn" data-key="A">A</button>
+                            <button class="keyboard-btn" data-key="S">S</button>
+                            <button class="keyboard-btn" data-key="D">D</button>
+                            <button class="keyboard-btn" data-key="F">F</button>
+                            <button class="keyboard-btn" data-key="G">G</button>
+                            <button class="keyboard-btn" data-key="H">H</button>
+                            <button class="keyboard-btn" data-key="J">J</button>
+                            <button class="keyboard-btn" data-key="K">K</button>
+                            <button class="keyboard-btn" data-key="L">L</button>
+                            <button class="keyboard-btn" data-key="Shift">Shift</button>
+                        </div>
+                        
+                        <div class="keyboard-row">
+                            <button class="keyboard-btn" data-key="Z">Z</button>
+                            <button class="keyboard-btn" data-key="X">X</button>
+                            <button class="keyboard-btn" data-key="C">C</button>
+                            <button class="keyboard-btn" data-key="V">V</button>
+                            <button class="keyboard-btn" data-key="B">B</button>
+                            <button class="keyboard-btn" data-key="N">N</button>
+                            <button class="keyboard-btn" data-key="M">M</button>
+                            <button class="keyboard-btn" data-key="Space" style="flex: 2;">Space</button>
+                            <button class="keyboard-btn" data-key="?">?</button>
+                            <button class="keyboard-btn" data-key="Enter" style="flex: 1;">Enter</button>
+                        </div>
+
+                        <!-- Dwell Timer Display -->
+                        <div id="dwellTimerContainer" class="dwell-timer-container">
+                            <div id="dwellTimer" class="dwell-timer"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Sidebar -->
+            <div class="col-lg-3">
+                <!-- Quick Phrases -->
+                <div class="card mb-3">
+                    <div class="card-header bg-secondary text-white">
+                        <h5 class="mb-0">Quick Phrases</h5>
+                    </div>
+                    <div class="card-body phrases-container">
+                        <button class="phrase-btn" data-phrase="Hello, how are you?">
+                            Hello, how are you?
+                        </button>
+                        <button class="phrase-btn" data-phrase="I need help">
+                            I need help
+                        </button>
+                        <button class="phrase-btn" data-phrase="Thank you">
+                            Thank you
+                        </button>
+                        <button class="phrase-btn" data-phrase="Yes / No">
+                            Yes / No
+                        </button>
+                        <button class="phrase-btn" data-phrase="I'm feeling good">
+                            I'm feeling good
+                        </button>
+                        <button class="phrase-btn" data-phrase="Please wait">
+                            Please wait
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Input Controls -->
+                <div class="card mb-3">
+                    <div class="card-header bg-secondary text-white">
+                        <h5 class="mb-0">Input Controls</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="autoCompleteToggle">
+                            <label class="form-check-label" for="autoCompleteToggle">
+                                Auto-complete
+                            </label>
+                        </div>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="wordPredictionToggle">
+                            <label class="form-check-label" for="wordPredictionToggle">
+                                Word Prediction
+                            </label>
+                        </div>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="soundFeedbackToggle" checked>
+                            <label class="form-check-label" for="soundFeedbackToggle">
+                                Sound Feedback
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dwell Settings -->
+                <div class="card">
+                    <div class="card-header bg-secondary text-white">
+                        <h5 class="mb-0">Dwell Time Settings</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="dwellTimeInput" class="form-label">Dwell Time (seconds)</label>
+                            <input type="range" class="form-range" id="dwellTimeInput" 
+                                   min="0.3" max="3.0" step="0.1" value="1.0">
+                            <small id="dwellTimeDisplay" class="text-muted">1.0s</small>
+                        </div>
+                        <div class="mb-3">
+                            <label for="autoCompleteToggle" class="form-label">3-Point Calibration</label>
+                            <button class="btn btn-sm btn-outline-primary w-100">
+                                <i class="fas fa-crosshairs"></i> Recalibrate
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="/static/js/utils.js"></script>
+    <script src="/static/js/communication.js"></script>
+</body>
+</html>
+

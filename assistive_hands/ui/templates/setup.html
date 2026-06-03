@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AssistiveHands - Setup</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="bg-light">
+    <div class="container py-5">
+        <!-- Logo and Title -->
+        <div class="text-center mb-5">
+            <h1><i class="fas fa-hand-holding text-primary"></i> AssistiveHands</h1>
+            <p class="text-muted">Your Context-Based Gaze & Facial Gesture Control System</p>
+            <p class="text-muted" style="font-size: 0.9rem;">Let's set up your personalized interaction system to provide hands-free control</p>
+        </div>
+
+        <!-- Setup Progress -->
+        <div class="row mb-5">
+            <div class="col-md-10 offset-md-1">
+                <div class="setup-progress mb-4">
+                    <div class="setup-step active" data-step="1">
+                        <div class="step-number">1</div>
+                        <div class="step-label">Profile</div>
+                    </div>
+                    <div class="setup-step" data-step="2">
+                        <div class="step-number">2</div>
+                        <div class="step-label">Camera</div>
+                    </div>
+                    <div class="setup-step" data-step="3">
+                        <div class="step-number">3</div>
+                        <div class="step-label">Calibration</div>
+                    </div>
+                    <div class="setup-step" data-step="4">
+                        <div class="step-number">4</div>
+                        <div class="step-label">Settings</div>
+                    </div>
+                    <div class="setup-step" data-step="5">
+                        <div class="step-number">5</div>
+                        <div class="step-label">Complete</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Setup Content -->
+        <div class="row">
+            <div class="col-md-10 offset-md-1">
+                <div class="card">
+                    <!-- Step 1: Create Profile -->
+                    <div class="setup-content active" id="step1">
+                        <div class="card-body">
+                            <h4>Create Your Profile</h4>
+                            <form id="profileForm">
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label for="firstName" class="form-label">First Name</label>
+                                        <input type="text" class="form-control" id="firstName" placeholder="Enter your first name" required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="lastName" class="form-label">Last Name</label>
+                                        <input type="text" class="form-control" id="lastName" placeholder="Enter your last name" required>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="profilePicture" class="form-label">Profile Picture</label>
+                                    <div class="profile-picture-container">
+                                        <img id="profilePicturePreview" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Ccircle cx='50' cy='50' r='50' fill='%23e9ecef'/%3E%3C/svg%3E" alt="Profile" class="profile-picture">
+                                        <input type="file" class="form-control" id="profilePicture" accept="image/*">
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <h6>Accessibility Needs</h6>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="limitedHandMotility">
+                                        <label class="form-check-label" for="limitedHandMotility">
+                                            Limited Hand Motility
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="motorImpairment">
+                                        <label class="form-check-label" for="motorImpairment">
+                                            Motor Impairment
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="otherConditions">
+                                        <label class="form-check-label" for="otherConditions">
+                                            Other Conditions
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <h6>Experience with Assistive Technology</h6>
+                                    <select class="form-select" id="experienceLevel">
+                                        <option selected>Select your experience level...</option>
+                                        <option>New to assistive technology</option>
+                                        <option>Some experience with assistive technology</option>
+                                        <option>Experienced user of assistive technology</option>
+                                    </select>
+                                </div>
+
+                                <div class="mb-3">
+                                    <h6>Interface Preferences</h6>
+                                    <select class="form-select" id="interfacePreference">
+                                        <option selected>Choose interface preference...</option>
+                                        <option>Low-contrast (for light sensitivity)</option>
+                                        <option>High-contrast (for visibility)</option>
+                                        <option>Medium contrast</option>
+                                    </select>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Step 2: Camera Setup -->
+                    <div class="setup-content" id="step2">
+                        <div class="card-body">
+                            <h4>Camera Alignment & Face Detection</h4>
+                            <p>Position yourself in front of the camera and ensure your face is clearly visible.</p>
+                            <div class="camera-preview mb-3">
+                                <img id="setupCameraFeed" src="{{ url_for('camera_feed') }}" alt="Camera Feed" class="img-fluid" style="max-height: 400px; width: 100%; object-fit: cover;">
+                            </div>
+                            <div id="alignmentChecklist">
+                                <h6>Alignment Checklist:</h6>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="faceInView">
+                                    <label class="form-check-label" for="faceInView">Face is clearly visible</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="properLighting">
+                                    <label class="form-check-label" for="properLighting">Proper lighting on face</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="cameraLevel">
+                                    <label class="form-check-label" for="cameraLevel">Camera at eye level</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Navigation Buttons -->
+                    <div class="card-footer bg-light d-flex justify-content-between">
+                        <button class="btn btn-secondary" id="prevBtn" style="display: none;">
+                            <i class="fas fa-arrow-left"></i> Back
+                        </button>
+                        <button class="btn btn-primary" id="nextBtn">
+                            Next <i class="fas fa-arrow-right"></i>
+                        </button>
+                        <button class="btn btn-success" id="completeBtn" style="display: none;">
+                            <i class="fas fa-check"></i> Complete Setup
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="{{ url_for('static', filename='js/utils.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/setup.js') }}"></script>
+</body>
+</html>
+
