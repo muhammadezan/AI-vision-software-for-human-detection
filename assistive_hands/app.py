@@ -79,7 +79,7 @@ last_dwell_click = 0.0
 DWELL_RADIUS     = 60
 DWELL_TIME       = 1.5
 DWELL_COOLDOWN   = 1.5
-DWELL_ENABLED    = True
+DWELL_ENABLED    = False  # UI pages handle dwell selection; avoid global 1.5s auto-clicks.
 DWELL_DOUBLE_CLICK = True
 
 # ── Cursor positioning constants ──────────────────────────────────────────────
@@ -113,20 +113,20 @@ EDGE_GAIN = 1.08
 
 # Dead zone: cursor won't move unless raw position changes by this fraction.
 # Kills micro-jitter from camera noise.
-DEAD_ZONE    = 0.0025
-SOFT_DEADZONE_ALPHA = 0.35
-MIN_CURSOR_PIXEL_DELTA = 4
+DEAD_ZONE    = 0.0035
+SOFT_DEADZONE_ALPHA = 0.24
+MIN_CURSOR_PIXEL_DELTA = 6
 CURSOR_OUTPUT_HZ = 45.0
 
 # Relative eye-mouse controller, ported from D:\temp\EyeTrackingMouse.
-RELATIVE_MOUSE_SENSITIVITY_X = 2.7
-RELATIVE_MOUSE_SENSITIVITY_Y = 1.6
-RELATIVE_FACE_SENSITIVITY = 0.55
-RELATIVE_SMOOTHING = 0.94
-RELATIVE_BUFFER_SIZE = 12
-RELATIVE_DEADZONE = 0.006
-MAX_CURSOR_STEP_X = 28.0
-MAX_CURSOR_STEP_Y = 22.0
+RELATIVE_MOUSE_SENSITIVITY_X = 2.45
+RELATIVE_MOUSE_SENSITIVITY_Y = 1.45
+RELATIVE_FACE_SENSITIVITY = 0.45
+RELATIVE_SMOOTHING = 0.965
+RELATIVE_BUFFER_SIZE = 16
+RELATIVE_DEADZONE = 0.008
+MAX_CURSOR_STEP_X = 18.0
+MAX_CURSOR_STEP_Y = 14.0
 
 relative_calibrated = False
 relative_center_offset = (0.0, 0.0)
@@ -1006,6 +1006,23 @@ def api_mouse_click():
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
 
+@app.route('/api/mouse/scroll', methods=['POST'])
+def api_mouse_scroll():
+    """Scroll the currently focused system surface."""
+    try:
+        data = request.get_json(silent=True) or {}
+        amount = int(data.get('amount', 0))
+        amount = max(-400, min(400, amount))
+
+        if amount == 0:
+            return jsonify({'status': 'error', 'message': 'amount is required'}), 400
+
+        pyautogui.scroll(amount)
+        return jsonify({'status': 'success', 'amount': amount})
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
 @app.route('/api/cursor/move', methods=['POST'])
 def api_cursor_move():
     """Queue a manual cursor move through the single cursor output loop."""
@@ -1037,6 +1054,59 @@ def api_cursor_disable():
     global cursor_control_enabled
     cursor_control_enabled = False
     return jsonify({'status': 'success', 'cursor_enabled': False})
+
+
+@app.route('/api/keyboard/press', methods=['POST'])
+def api_keyboard_press():
+    """Press one system keyboard key."""
+    try:
+        data = request.get_json(silent=True) or {}
+        key = str(data.get('key', '')).strip().lower()
+
+        if not key:
+            return jsonify({'status': 'error', 'message': 'key is required'}), 400
+
+        key_map = {
+            'enter': 'enter',
+            'return': 'enter',
+            'space': 'space',
+            'backspace': 'backspace',
+            'delete': 'delete',
+            'tab': 'tab',
+            'escape': 'esc',
+            'esc': 'esc',
+        }
+        pyautogui.press(key_map.get(key, key))
+        return jsonify({'status': 'success', 'key': key})
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+@app.route('/api/keyboard/type', methods=['POST'])
+def api_keyboard_type():
+    """Type text into the currently focused system application."""
+    try:
+        data = request.get_json(silent=True) or {}
+        text = str(data.get('text', ''))
+
+        if not text:
+            return jsonify({'status': 'error', 'message': 'text is required'}), 400
+
+        if len(text) > 500:
+            return jsonify({'status': 'error', 'message': 'text is too long'}), 400
+
+        for part in text.splitlines(keepends=True):
+            if part.endswith('\n') or part.endswith('\r'):
+                chunk = part.rstrip('\r\n')
+                if chunk:
+                    pyautogui.write(chunk, interval=0.01)
+                pyautogui.press('enter')
+            elif part:
+                pyautogui.write(part, interval=0.01)
+
+        return jsonify({'status': 'success', 'characters': len(text)})
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
 
 
 @app.route('/api/calibration/start', methods=['POST'])

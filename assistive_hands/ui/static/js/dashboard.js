@@ -17,7 +17,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const camResp = await api.post('/api/camera/start');
             console.log('Camera start response:', camResp);
             if (!camResp || camResp.status !== 'success') {
-                throw new Error(camResp?.message || 'Camera start failed');
+                throw new Error((camResp && camResp.message) || 'Camera start failed');
             }
             showToast('Camera started', 'success');
         } catch (err) {
@@ -96,6 +96,8 @@ function toggleGazeControl(enabled) {
     showToast(`Gaze control ${status} (Space/ESC to toggle)`, enabled ? 'success' : 'warning');
 }
 
+window.toggleGazeControl = toggleGazeControl;
+
 function updateGazeControlUi(enabled) {
     const statusEl = document.getElementById('gazeControlStatus');
     const stateEl = document.getElementById('dashboardGazeState');
@@ -134,21 +136,33 @@ function setupButtonListeners() {
     const voiceBtn = document.getElementById('voiceBtn');
     const pauseBtn = document.getElementById('pauseBtn');
 
-    recalibrateBtn?.addEventListener('click', () => {
-        window.location.href = '/calibration';
-    });
+    if (recalibrateBtn) {
+        recalibrateBtn.addEventListener('click', () => {
+            window.location.href = '/calibration';
+        });
+    }
 
-    textEntryBtn?.addEventListener('click', () => {
-        window.location.href = '/communication';
-    });
+    if (textEntryBtn) {
+        textEntryBtn.addEventListener('click', () => {
+            window.location.href = '/communication';
+        });
+    }
 
-    voiceBtn?.addEventListener('click', () => {
-        showToast('Voice commands module coming soon', 'info');
-    });
+    if (voiceBtn) {
+        voiceBtn.addEventListener('click', () => {
+            if (window.AssistiveHandsVoice && window.AssistiveHandsVoice.start()) {
+                showToast('Voice commands active', 'info');
+            } else {
+                showToast('Voice commands need Chrome or Edge microphone access', 'warning');
+            }
+        });
+    }
 
-    pauseBtn?.addEventListener('click', () => {
-        toggleSystemPause(pauseBtn);
-    });
+    if (pauseBtn) {
+        pauseBtn.addEventListener('click', () => {
+            toggleSystemPause(pauseBtn);
+        });
+    }
 }
 
 function startGazeUpdates() {

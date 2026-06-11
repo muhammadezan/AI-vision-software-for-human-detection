@@ -42,6 +42,9 @@
                             <button class="btn btn-sm btn-success gaze-target gaze-target-dense" id="speakBtn" title="Speak text">
                                 <i class="fas fa-volume-up"></i> Speak
                             </button>
+                            <button class="btn btn-sm btn-outline-primary gaze-target gaze-target-dense" id="voiceBtn" title="Voice commands" aria-pressed="false">
+                                <i class="fas fa-microphone"></i> Voice
+                            </button>
                             <button class="btn btn-sm btn-danger gaze-target gaze-target-dense" id="clearBtn" title="Clear text">
                                 <i class="fas fa-trash"></i> Clear
                             </button>
@@ -161,6 +164,16 @@
                             <label class="form-check-label" for="soundFeedbackToggle">
                                 Sound Feedback
                             </label>
+                        </div>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="sendToSystemCheckbox" checked disabled>
+                            <label class="form-check-label" for="sendToSystemCheckbox">
+                                Send to Windows always on
+                            </label>
+                        </div>
+                        <div class="voice-status mt-3" id="voiceStatus" role="status" aria-live="polite">
+                            <i class="fas fa-microphone-slash"></i>
+                            <span>Voice idle</span>
                         </div>
                     </div>
                 </div>

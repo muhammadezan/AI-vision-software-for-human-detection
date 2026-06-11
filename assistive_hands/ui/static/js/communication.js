@@ -9,6 +9,11 @@ let dwellEnabled = true;
 let gazeInputPaused = false;
 let activeDwellId = null;
 let completedDwellId = null;
+let voiceRecognition = null;
+let voiceListening = false;
+let voiceSupported = false;
+const voiceAutoStart = true;
+const systemOutputAlwaysEnabled = true;
 const mapper = new GazeElementMapper();
 const dwellTimers = new Map();
 
@@ -16,6 +21,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log('Communication page loaded');
 
     try {
+        syncDisplayTextFromDom();
+
         // Start camera
         await api.post('/api/camera/start');
         showToast('Camera started', 'success');
@@ -67,14 +74,22 @@ function setupControls() {
     console.log('=== Setting up controls ===');
     
     const speakBtn = document.getElementById('speakBtn');
+    const voiceBtn = document.getElementById('voiceBtn');
     const clearBtn = document.getElementById('clearBtn');
     const dwellTimeInput = document.getElementById('dwellTimeInput');
     const dwellEnabledToggle = document.getElementById('dwellEnabledToggle');
     const pauseGazeInputBtn = document.getElementById('pauseGazeInputBtn');
     const communicationBackBtn = document.getElementById('communicationBackBtn');
+    const sendToSystemCheckbox = document.getElementById('sendToSystemCheckbox');
 
     console.log('Speak Button found:', !!speakBtn);
+    console.log('Voice Button found:', !!voiceBtn);
     console.log('Clear Button found:', !!clearBtn);
+
+    if (sendToSystemCheckbox) {
+        sendToSystemCheckbox.checked = true;
+        sendToSystemCheckbox.disabled = true;
+    }
 
     // Speak button - DIRECT IMPLEMENTATION
     if (speakBtn) {
@@ -136,6 +151,8 @@ function setupControls() {
         };
     }
 
+    setupVoiceControls();
+
     // Dwell time input
     if (dwellTimeInput) {
         dwellTimeInput.addEventListener('input', (e) => {
@@ -152,17 +169,21 @@ function setupControls() {
         });
     }
 
-    pauseGazeInputBtn?.addEventListener('click', () => {
-        setGazeInputPaused(!gazeInputPaused);
-    });
+    if (pauseGazeInputBtn) {
+        pauseGazeInputBtn.addEventListener('click', () => {
+            setGazeInputPaused(!gazeInputPaused);
+        });
+    }
 
-    communicationBackBtn?.addEventListener('click', () => {
-        if (window.history.length > 1) {
-            window.history.back();
-        } else {
-            window.location.href = '/';
-        }
-    });
+    if (communicationBackBtn) {
+        communicationBackBtn.addEventListener('click', () => {
+            if (window.history.length > 1) {
+                window.history.back();
+            } else {
+                window.location.href = '/';
+            }
+        });
+    }
 
     updateGazeInputState();
     
@@ -171,7 +192,7 @@ function setupControls() {
 
 function refreshGazeTargets() {
     cancelAllDwell();
-    if (mapper.currentElement?.onLeave) {
+    if (mapper.currentElement && mapper.currentElement.onLeave) {
         mapper.currentElement.onLeave();
     }
     mapper.elements = [];
@@ -180,7 +201,7 @@ function refreshGazeTargets() {
     const targets = [
         ...document.querySelectorAll('.keyboard-btn'),
         ...document.querySelectorAll('.phrase-btn'),
-        ...document.querySelectorAll('#speakBtn, #clearBtn, #pauseGazeInputBtn, #communicationBackBtn, .communication-toolbar a')
+        ...document.querySelectorAll('#speakBtn, #voiceBtn, #clearBtn, #pauseGazeInputBtn, #communicationBackBtn, .communication-toolbar a')
     ];
 
     targets.forEach((target, index) => {
@@ -268,9 +289,7 @@ function handleKeyPress(key, btn) {
     } else if (key === 'Space') {
         addText(' ');
     } else if (key === 'Backspace' || key === '⌫') {
-        if (displayText.length > 0) {
-            displayText = displayText.slice(0, -1);
-        }
+        deleteLastCharacter(false);
     } else if (key !== 'Shift') {
         addText(key);
     }
@@ -278,14 +297,16 @@ function handleKeyPress(key, btn) {
     updateTextDisplay();
 
     // Send key press to system keyboard (optional - can be disabled)
-    const sendToSystem = document.getElementById('sendToSystemCheckbox')?.checked ?? false;
+    const sendToSystem = shouldSendToSystem();
     if (sendToSystem) {
         sendKeyToSystem(key);
     }
 
     // Visual feedback
-    btn.classList.add('active');
-    setTimeout(() => btn.classList.remove('active'), 100);
+    if (btn) {
+        btn.classList.add('active');
+        setTimeout(() => btn.classList.remove('active'), 100);
+    }
 }
 
 function handlePhrasePress(btn) {
@@ -309,6 +330,11 @@ async function sendKeyToSystem(key) {
             'Tab': 'tab',
         };
         
+        if (!keyMap[key] && key.length === 1) {
+            await sendTextToSystem(key);
+            return;
+        }
+
         const systemKey = keyMap[key] || key.toLowerCase();
         
         const response = await api.post('/api/keyboard/press', {
@@ -323,15 +349,350 @@ async function sendKeyToSystem(key) {
     }
 }
 
+async function sendTextToSystem(text) {
+    if (!text) return;
+
+    try {
+        const response = await api.post('/api/keyboard/type', {
+            text: text
+        });
+
+        if (response.status !== 'success') {
+            console.error('Failed to send text to system:', response.message);
+            showToast(response.message || 'Could not type into Windows', 'warning');
+        }
+    } catch (error) {
+        console.error('Error sending text to system:', error);
+        showToast('Could not type into Windows', 'warning');
+    }
+}
+
+function shouldSendToSystem() {
+    if (systemOutputAlwaysEnabled) {
+        return true;
+    }
+
+    const sendToSystemCheckbox = document.getElementById('sendToSystemCheckbox');
+    return sendToSystemCheckbox ? sendToSystemCheckbox.checked : false;
+}
+
 function addText(text) {
     displayText += text;
     updateTextDisplay();
+}
+
+function addVoiceText(text) {
+    if (!text) return;
+
+    const separator = displayText && !/\s$/.test(displayText) ? ' ' : '';
+    const addition = separator + text;
+    addText(addition);
+
+    if (shouldSendToSystem()) {
+        sendTextToSystem(addition);
+    }
+}
+
+function deleteLastCharacter(sendToSystem = true) {
+    if (displayText.length > 0) {
+        displayText = displayText.slice(0, -1);
+    }
+    updateTextDisplay();
+
+    if (sendToSystem && shouldSendToSystem()) {
+        sendKeyToSystem('Backspace');
+    }
 }
 
 function clearText() {
     displayText = '';
     updateTextDisplay();
     showToast('Text cleared', 'info');
+}
+
+function setupVoiceControls() {
+    if (window.AssistiveHandsVoice) {
+        voiceListening = window.AssistiveHandsVoice.isListening();
+        updateVoiceStatus(voiceListening ? 'Listening' : 'Click Voice to start', voiceListening ? 'listening' : 'idle');
+        updateVoiceButton();
+        return;
+    }
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const voiceBtn = document.getElementById('voiceBtn');
+
+    if (!voiceBtn) return;
+
+    if (!SpeechRecognition) {
+        voiceSupported = false;
+        voiceBtn.disabled = true;
+        updateVoiceStatus('Voice not supported in this browser', 'unsupported');
+        voiceBtn.title = 'Try Chrome or Edge for voice commands';
+        return;
+    }
+
+    voiceSupported = true;
+    voiceRecognition = new SpeechRecognition();
+    voiceRecognition.continuous = true;
+    voiceRecognition.interimResults = false;
+    voiceRecognition.lang = 'en-US';
+
+    voiceRecognition.onstart = () => {
+        voiceListening = true;
+        updateVoiceButton();
+        updateVoiceStatus('Listening for voice commands', 'listening');
+    };
+
+    voiceRecognition.onresult = (event) => {
+        for (let i = event.resultIndex; i < event.results.length; i += 1) {
+            if (!event.results[i].isFinal) continue;
+            const transcript = event.results[i][0].transcript;
+            handleVoiceCommand(transcript);
+        }
+    };
+
+    voiceRecognition.onerror = (event) => {
+        console.error('Voice recognition error:', event.error);
+        if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+            voiceListening = false;
+            updateVoiceStatus('Microphone permission blocked', 'error');
+            updateVoiceButton();
+            return;
+        }
+        updateVoiceStatus(`Voice error: ${event.error}`, 'error');
+    };
+
+    voiceRecognition.onend = () => {
+        if (voiceListening) {
+            try {
+                voiceRecognition.start();
+            } catch (error) {
+                voiceListening = false;
+                updateVoiceStatus('Voice stopped', 'idle');
+                updateVoiceButton();
+            }
+            return;
+        }
+
+        updateVoiceStatus('Voice idle', 'idle');
+        updateVoiceButton();
+    };
+
+    voiceBtn.addEventListener('click', (event) => {
+        event.preventDefault();
+        toggleVoiceRecognition();
+    });
+
+    updateVoiceStatus('Voice idle', 'idle');
+    updateVoiceButton();
+
+    if (voiceAutoStart) {
+        setTimeout(() => {
+            startVoiceRecognition();
+        }, 500);
+    }
+}
+
+function toggleVoiceRecognition() {
+    if (!voiceSupported || !voiceRecognition) return;
+
+    if (voiceListening) {
+        if (voiceAutoStart) {
+            updateVoiceStatus('Voice is always on', 'listening');
+            return;
+        }
+        stopVoiceRecognition();
+    } else {
+        startVoiceRecognition();
+    }
+}
+
+function startVoiceRecognition() {
+    if (!voiceSupported || !voiceRecognition) return;
+
+    try {
+        voiceRecognition.start();
+    } catch (error) {
+        console.warn('Voice recognition already starting or active:', error);
+        updateVoiceStatus('Click Voice once if microphone permission is needed', 'error');
+    }
+}
+
+function stopVoiceRecognition() {
+    if (!voiceRecognition) return;
+
+    voiceListening = false;
+    try {
+        voiceRecognition.stop();
+    } catch (error) {
+        console.warn('Voice recognition stop failed:', error);
+    }
+    updateVoiceStatus('Voice idle', 'idle');
+    updateVoiceButton();
+}
+
+function handleVoiceCommand(transcript) {
+    const spoken = transcript.trim();
+    const command = spoken.toLowerCase().replace(/[.?!]$/g, '');
+    const explicitKeyCommand = /^(press|key|keyboard)\s+/.test(command);
+    const keyCommand = command
+        .replace(/^(press|key|keyboard)\s+/, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+    if (!spoken) return;
+
+    console.log('Voice command:', spoken);
+
+    const quickPhrases = {
+        'yes': 'Yes',
+        'no': 'No',
+        'thank you': 'Thank you',
+        'i need help': 'I need help',
+        "i'm feeling good": "I'm feeling good",
+        'please wait': 'Please wait',
+        'hello': 'Hello',
+        'hello how are you': 'Hello, how are you?'
+    };
+
+    const punctuationCommands = {
+        'comma': ',',
+        'period': '.',
+        'full stop': '.',
+        'dot': '.',
+        'question mark': '?',
+        'exclamation mark': '!',
+        'exclamation point': '!',
+        'colon': ':',
+        'semicolon': ';',
+        'dash': '-',
+        'hyphen': '-',
+        'apostrophe': "'",
+        'quote': '"',
+        'open bracket': '(',
+        'close bracket': ')',
+        'open parenthesis': '(',
+        'close parenthesis': ')'
+    };
+
+    const systemKeyCommands = {
+        'enter': 'Enter',
+        'return': 'Enter',
+        'new line': 'Enter',
+        'next line': 'Enter',
+        'line break': 'Enter',
+        'space': 'Space',
+        'tab': 'Tab',
+        'escape': 'escape',
+        'esc': 'escape',
+        'left': 'left',
+        'left arrow': 'left',
+        'right': 'right',
+        'right arrow': 'right',
+        'up': 'up',
+        'up arrow': 'up',
+        'down': 'down',
+        'down arrow': 'down',
+        'home': 'home',
+        'end': 'end',
+        'page up': 'pageup',
+        'page down': 'pagedown',
+        'delete': 'delete',
+        'forward delete': 'delete',
+        'delete key': 'delete'
+    };
+
+    if (command === 'stop listening' || command === 'stop voice') {
+        if (voiceAutoStart) {
+            updateVoiceStatus('Voice is always on', 'listening');
+            return;
+        }
+        stopVoiceRecognition();
+        return;
+    }
+
+    if (command === 'clear' || command === 'clear text') {
+        clearText();
+        return;
+    }
+
+    if (command === 'speak' || command === 'speak text') {
+        const speakBtn = document.getElementById('speakBtn');
+        if (speakBtn) {
+            speakBtn.click();
+        }
+        return;
+    }
+
+    if (
+        keyCommand === 'backspace' ||
+        (keyCommand === 'delete' && !explicitKeyCommand) ||
+        keyCommand === 'delete last' ||
+        keyCommand === 'remove last'
+    ) {
+        deleteLastCharacter();
+        return;
+    }
+
+    if (punctuationCommands[keyCommand]) {
+        addVoiceText(punctuationCommands[keyCommand]);
+        return;
+    }
+
+    if (systemKeyCommands[keyCommand]) {
+        const key = systemKeyCommands[keyCommand];
+
+        if (key === 'Enter') {
+            addText('\n');
+        } else if (key === 'Space') {
+            addText(' ');
+        } else if (key === 'Tab') {
+            addText('\t');
+        }
+
+        if (shouldSendToSystem()) {
+            sendKeyToSystem(key);
+        }
+        return;
+    }
+
+    if (command.startsWith('type ')) {
+        addVoiceText(spoken.slice(5).trim());
+        return;
+    }
+
+    addVoiceText(quickPhrases[command] || spoken);
+}
+
+function updateVoiceStatus(message, state = 'idle') {
+    const statusEl = document.getElementById('voiceStatus');
+    if (!statusEl) return;
+
+    statusEl.classList.remove('is-listening', 'is-error', 'is-unsupported');
+    if (state === 'listening') {
+        statusEl.classList.add('is-listening');
+    } else if (state === 'error') {
+        statusEl.classList.add('is-error');
+    } else if (state === 'unsupported') {
+        statusEl.classList.add('is-unsupported');
+    }
+
+    const iconClass = state === 'listening' ? 'fa-microphone' : 'fa-microphone-slash';
+    statusEl.innerHTML = `<i class="fas ${iconClass}"></i><span>${message}</span>`;
+}
+
+function updateVoiceButton() {
+    const voiceBtn = document.getElementById('voiceBtn');
+    if (!voiceBtn) return;
+
+    voiceBtn.setAttribute('aria-pressed', voiceListening ? 'true' : 'false');
+    voiceBtn.classList.toggle('btn-primary', voiceListening);
+    voiceBtn.classList.toggle('btn-outline-primary', !voiceListening);
+    voiceBtn.innerHTML = voiceListening && voiceAutoStart
+        ? '<i class="fas fa-microphone"></i> Voice On'
+        : voiceListening
+        ? '<i class="fas fa-microphone-slash"></i> Stop Voice'
+        : '<i class="fas fa-microphone"></i> Voice';
 }
 
 function updateTextDisplay() {
@@ -344,6 +705,17 @@ function updateTextDisplay() {
 
     if (charCountEl) {
         charCountEl.textContent = `Character count: ${displayText.length}`;
+    }
+}
+
+function syncDisplayTextFromDom() {
+    const displayEl = document.getElementById('displayText');
+    if (!displayEl) return;
+
+    const currentText = displayEl.textContent.trim();
+    if (currentText && currentText !== 'Start typing...') {
+        displayText = currentText;
+        updateTextDisplay();
     }
 }
 
@@ -429,6 +801,10 @@ function updateDwellTimers() {
     dwellTimers.set(elementId, timerObj);
 }
 
+function getCommunicationText() {
+    return displayText;
+}
+
 function activateDwellTarget(target) {
     if (target.classList.contains('keyboard-btn')) {
         handleKeyPress(target.dataset.key, target);
@@ -491,7 +867,16 @@ function updateGazeInputState() {
 }
 
 // Cleanup — do NOT stop camera on page unload
+Object.assign(window, {
+    addText,
+    clearText,
+    deleteLastCharacter,
+    getCommunicationText,
+    setGazeInputPaused
+});
+
 window.addEventListener('beforeunload', () => {
     clearInterval(gazeUpdateInterval);
     cancelAllDwell();
+    stopVoiceRecognition();
 });

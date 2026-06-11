@@ -5,6 +5,9 @@
         </a>
 
         <div class="d-flex align-items-center gap-2 order-lg-3">
+            <span class="global-voice-status" id="globalVoiceStatus" role="status" aria-live="polite">
+                <i class="fas fa-microphone-slash"></i><span>Voice starting</span>
+            </span>
             {% if request.endpoint not in ['dashboard', 'dashboard_page'] %}
             <button type="button" class="btn btn-outline-light app-back-btn" onclick="history.length > 1 ? history.back() : window.location.href='/'">
                 <i class="fas fa-arrow-left"></i> Back
@@ -53,3 +56,4 @@
         </div>
     </div>
 </nav>
+<script src="{{ url_for('static', filename='js/global_voice.js') }}"></script>
