@@ -6,8 +6,8 @@ class ScrollWorker:
     """Backend-owned continuous scroll loop."""
 
     PROFILES = {
-        "normal": {"amount": 60, "interval": 0.03},
-        "fast": {"amount": 180, "interval": 0.03},
+        "normal": {"amount": 2, "interval": 0.05},
+        "fast": {"amount": 8, "interval": 0.05},
     }
 
     def __init__(self, scroll_func, state_store=None):

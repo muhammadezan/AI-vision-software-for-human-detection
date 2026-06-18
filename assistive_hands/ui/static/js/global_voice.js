@@ -312,8 +312,8 @@
         stopScroll();
 
         const profiles = {
-            normal: {pageAmount: 1000, pageInterval: 30},
-            fast: {pageAmount: 3000, pageInterval: 30}
+            normal: {pageAmount: 90, pageInterval: 40},
+            fast: {pageAmount: 300, pageInterval: 40}
         };
         const profile = profiles[speed || 'normal'] || profiles.normal;
         const pageAmount = direction > 0 ? profile.pageAmount : -profile.pageAmount;
@@ -368,7 +368,7 @@
         const scrollWords = ['scroll', 'scrolling', 'scrolled', 'skroll', 'school'];
         const downWords = ['down', 'downward', 'downwards', 'lower', 'below', 'bottom', 'neeche', 'niche'];
         const upWords = ['up', 'upward', 'upwards', 'upper', 'above', 'top', 'upar'];
-        const fastWords = ['fast', 'quick', 'quickly', 'rapid', 'rapidly', 'very', 'super', 'jaldi', 'tez'];
+        const fastWords = ['fast', 'faster', 'quick', 'quickly', 'rapid', 'rapidly', 'speed', 'speedy', 'very', 'super', 'jaldi', 'tez'];
         const pageWords = ['page', 'move', 'go', 'keep', 'start'];
         const wantsStop = hasAnyToken(tokens, stopWords);
         const mentionsScroll = hasAnyToken(tokens, scrollWords);
@@ -385,12 +385,12 @@
             return {type: 'stop'};
         }
 
-        if (commandMatches(command, ['fast scroll down', 'scroll down fast', 'very fast scroll down', 'super scroll down', 'page down fast', 'fast neeche', 'fast niche', 'jaldi neeche', 'jaldi niche']) ||
+        if (commandMatches(command, ['fast scroll down', 'scroll down fast', 'scroll down faster', 'scroll down quickly', 'scroll fast down', 'quick scroll down', 'very fast scroll down', 'super scroll down', 'speed scroll down', 'page down fast', 'fast neeche', 'fast niche', 'jaldi neeche', 'jaldi niche', 'tez neeche', 'tez niche']) ||
             (wantsDown && wantsFast && (mentionsScroll || wantsPageMove))) {
             return {type: 'start', direction: 1, speed: 'fast'};
         }
 
-        if (commandMatches(command, ['fast scroll up', 'scroll up fast', 'very fast scroll up', 'super scroll up', 'page up fast', 'fast upar', 'jaldi upar']) ||
+        if (commandMatches(command, ['fast scroll up', 'scroll up fast', 'scroll up faster', 'scroll up quickly', 'scroll fast up', 'fast up scroll', 'quick scroll up', 'quick up scroll', 'very fast scroll up', 'super scroll up', 'speed scroll up', 'page up fast', 'fast upar', 'jaldi upar', 'tez upar']) ||
             (wantsUp && wantsFast && (mentionsScroll || wantsPageMove))) {
             return {type: 'start', direction: -1, speed: 'fast'};
         }

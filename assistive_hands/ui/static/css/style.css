@@ -171,6 +171,24 @@ small,
     gap: 0.5rem;
 }
 
+.app-brand-logo {
+    width: 86px;
+    height: 48px;
+    object-fit: contain;
+    border-radius: 4px;
+    background: #fff;
+}
+
+.setup-title-logo {
+    width: 128px;
+    height: 96px;
+    object-fit: contain;
+    margin-right: 0.5rem;
+    vertical-align: middle;
+    border-radius: 4px;
+    background: #fff;
+}
+
 .app-nav-links {
     gap: 0.25rem;
 }
