@@ -39,6 +39,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Setup controls
         setupControls();
+        preventBrowserScrollKeys();
 
         // Register gaze targets after controls exist
         requestAnimationFrame(refreshGazeTargets);
@@ -192,6 +193,24 @@ function setupControls() {
     updateGazeInputState();
     
     console.log('Controls setup complete');
+}
+
+function preventBrowserScrollKeys() {
+    document.addEventListener('keydown', (event) => {
+        const target = event.target;
+        const editable = target && (
+            target.isContentEditable ||
+            target.tagName === 'INPUT' ||
+            target.tagName === 'TEXTAREA' ||
+            target.tagName === 'SELECT'
+        );
+
+        if (editable || event.ctrlKey || event.altKey || event.metaKey) return;
+
+        if (event.code === 'Space' || event.code === 'PageDown' || event.code === 'PageUp') {
+            event.preventDefault();
+        }
+    });
 }
 
 function refreshGazeTargets() {
@@ -361,6 +380,38 @@ function handleKeyPress(key, btn) {
     }
 }
 
+function findKeyboardButton(key) {
+    const normalizedKey = String(key || '').trim().toLowerCase();
+    if (!normalizedKey) return null;
+
+    return Array.from(document.querySelectorAll('.keyboard-btn')).find(btn => {
+        return String(btn.dataset.key || '').trim().toLowerCase() === normalizedKey;
+    }) || null;
+}
+
+function pressCommunicationKey(key) {
+    const aliases = {
+        enter: 'Enter',
+        return: 'Enter',
+        'new line': 'Enter',
+        'next line': 'Enter',
+        space: 'Space',
+        'question mark': '?',
+        '?': '?',
+        shift: 'Shift'
+    };
+    const rawKey = String(key || '').trim();
+    const resolvedKey = aliases[rawKey.toLowerCase()] || rawKey.toUpperCase();
+    const btn = findKeyboardButton(resolvedKey);
+
+    if (!btn) {
+        return false;
+    }
+
+    handleKeyPress(btn.dataset.key, btn);
+    return true;
+}
+
 function handlePhrasePress(btn) {
     const phrase = btn.dataset.phrase;
     if (!phrase) return;
@@ -464,8 +515,15 @@ function clearText() {
 
 function setupVoiceControls() {
     if (window.AssistiveHandsVoice || window.AssistiveHandsGlobalVoiceOwner) {
-        voiceListening = Boolean(window.AssistiveHandsVoice && window.AssistiveHandsVoice.isListening());
-        updateVoiceStatus(voiceListening ? 'Listening' : 'Click Voice to start', voiceListening ? 'listening' : 'idle');
+        const globalVoice = window.AssistiveHandsVoice;
+        voiceSupported = Boolean(globalVoice && globalVoice.isSupported());
+        voiceListening = Boolean(globalVoice && globalVoice.isListening());
+        const message = voiceSupported
+            ? (voiceListening ? 'Listening' : 'Click Voice to start')
+            : (globalVoice && typeof globalVoice.supportMessage === 'function'
+                ? globalVoice.supportMessage()
+                : 'Voice not supported in this browser');
+        updateVoiceStatus(message, voiceSupported ? (voiceListening ? 'listening' : 'idle') : 'unsupported');
         updateVoiceButton();
         return;
     }
@@ -924,6 +982,7 @@ Object.assign(window, {
     clearText,
     deleteLastCharacter,
     getCommunicationText,
+    pressCommunicationKey,
     setGazeInputPaused
 });
 

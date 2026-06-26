@@ -22,3 +22,24 @@ logs/
 
 # Jupyter
 .ipynb_checkpoints/
+
+# Local agent/project notes
+AGENTS.md
+assistive_hands/CURRENT_DOCS.md
+assistive_hands/PROJECT_CONTEXT.md
+assistive_hands/DESIGN_IMPLEMENTATION_PLAN.md
+assistive_hands/IMPLEMENTATION_PLAN_EYE_CURSOR_HEAD_FIXES.md
+assistive_hands/IMPLEMENTATION_REFACTOR_PLAN.md
+assistive_hands/NEWREADME.md
+assistive_hands/PROJECT_SUMMARY.md
+assistive_hands/PROJECT_TREE.md
+assistive_hands/START_HERE.md
+assistive_hands/TEST_CURSOR.md
+assistive_hands/VOICE_COMMAND_PLAN.md
+
+# Generated exports and local captures
+Capture*.PNG
+Capture*.png
+assistive_hands/debug_frame*.jpg
+assistive_hands/test_camera*.jpg
+assistive_hands/AssistiveHands_Voice_Commands.pdf

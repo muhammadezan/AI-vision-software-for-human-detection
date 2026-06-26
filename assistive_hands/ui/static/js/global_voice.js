@@ -3,12 +3,17 @@
 (function () {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     const AUTO_START_VOICE = true;
+    const STARTING_TIMEOUT_MS = 6000;
+    const START_FAILURE_RETRY_MS = 900;
+    const MAX_START_FAILURE_RETRY_MS = 5000;
     const STALE_ACTIVE_TIMEOUT_MS = 15000;
     const PERIODIC_RECREATE_MS = 5 * 60 * 1000;
+    const insecureSpeechOrigin = window.location.protocol !== 'https:' &&
+        !['localhost', '127.0.0.1', '[::1]', '::1'].includes(window.location.hostname);
 
     const state = {
         recognition: null,
-        supported: Boolean(SpeechRecognition),
+        supported: Boolean(SpeechRecognition) && !insecureSpeechOrigin,
         desired: false,
         active: false,
         starting: false,
@@ -21,7 +26,9 @@
         lastHandledAt: 0,
         lastInterimTranscript: '',
         lastVoiceActivityAt: 0,
+        recognitionStartingAt: 0,
         recognitionStartedAt: 0,
+        startFailureCount: 0,
         ignoreAbortUntil: 0,
         recovering: false,
         abortRestartTimer: null,
@@ -32,6 +39,7 @@
             errors: 0,
             ends: 0,
             recreates: 0,
+            startFailures: 0,
             lastError: ''
         }
     };
@@ -132,10 +140,17 @@
         voiceBtn.setAttribute('aria-pressed', state.desired ? 'true' : 'false');
         voiceBtn.classList.toggle('btn-primary', state.desired);
         voiceBtn.classList.toggle('btn-outline-primary', !state.desired);
-        voiceBtn.title = state.supported ? 'Voice commands' : 'Try Chrome or Edge for voice commands';
+        voiceBtn.title = state.supported ? 'Voice commands' : supportMessage();
         voiceBtn.innerHTML = state.desired
             ? '<i class="fas fa-microphone"></i> Voice On'
             : '<i class="fas fa-microphone"></i> Voice';
+    }
+
+    function supportMessage() {
+        if (insecureSpeechOrigin) {
+            return 'Open the app with localhost or HTTPS for voice commands';
+        }
+        return 'Try Chrome or Edge for voice commands';
     }
 
     function normalizeCommand(transcript) {
@@ -258,11 +273,16 @@
         return true;
     }
 
+    function hasCommunicationTextTarget() {
+        return typeof window.addText === 'function';
+    }
+
     function addDictation(text) {
         if (!text) return;
         const addition = formatDictationAddition(text);
-        if (typeof window.addText === 'function') {
+        if (hasCommunicationTextTarget()) {
             window.addText(addition);
+            return;
         }
         sendTextToSystem(addition).catch(function (error) {
             console.error('System typing failed:', error);
@@ -283,6 +303,11 @@
             return true;
         }
         return false;
+    }
+
+    function pressCommunicationKey(keyCommand) {
+        if (typeof window.pressCommunicationKey !== 'function') return false;
+        return window.pressCommunicationKey(keyCommand);
     }
 
     function stopScroll() {
@@ -448,16 +473,27 @@
         setStatus(count > 1 ? 'Double click' : 'Click', 'listening');
     }
 
-    function handleCommand(transcript) {
+    function handleCommand(transcript, options) {
+        const handleOptions = options || {};
+        const interim = Boolean(handleOptions.interim);
         const spoken = transcript.trim();
         const command = normalizeCommand(spoken);
         if (!command) return;
 
         if (shouldSkipDuplicate(command)) return;
-        rememberHandledCommand(command);
+
+        const explicitKeyCommand = /^(press|key|keyboard)\s+/.test(command);
+        const explicitTypeCommand = command.indexOf('type ') === 0;
+        const explicitSymbolCommand = /^(insert|add)\s+/.test(command);
+        const dictationCommand = explicitTypeCommand || explicitSymbolCommand;
+
+        if (interim && dictationCommand) {
+            return;
+        }
 
         const scrollAction = getScrollAction(command);
-        if (scrollAction) {
+        if (!dictationCommand && scrollAction) {
+            rememberHandledCommand(command);
             if (scrollAction.type === 'stop') {
                 stopScroll();
             } else {
@@ -466,13 +502,10 @@
             return;
         }
 
-        if (state.scrollTimer) {
+        if (!interim && state.scrollTimer) {
             stopScroll();
         }
 
-        const explicitKeyCommand = /^(press|key|keyboard)\s+/.test(command);
-        const explicitTypeCommand = command.indexOf('type ') === 0;
-        const explicitSymbolCommand = /^(insert|add)\s+/.test(command);
         const keyCommand = command
             .replace(/^(press|key|keyboard)\s+/, '')
             .replace(/\s+(key|button)$/g, '')
@@ -548,28 +581,38 @@
         };
 
         if (commandMatches(command, ['click', 'mouse click', 'left click', 'select', 'choose', 'press', 'click karo', 'mouse click karo', 'left click karo', 'select karo', 'choose karo', 'press karo', 'dabao'])) {
+            rememberHandledCommand(command);
+            if (state.scrollTimer) stopScroll();
             clickMouse(1);
             resetStatusToListeningSoon(500);
             return;
         }
 
         if (commandMatches(command, ['double click', 'double-click', 'double mouse click', 'double click karo'])) {
+            rememberHandledCommand(command);
+            if (state.scrollTimer) stopScroll();
             clickMouse(2);
             resetStatusToListeningSoon(500);
             return;
         }
 
         if (commandMatches(command, ['pause gaze', 'disable gaze', 'stop gaze', 'turn off gaze', 'gaze off', 'pause gaze control', 'disable gaze control', 'stop gaze control', 'turn off gaze control', 'pause eye control', 'disable eye control', 'stop eye control', 'eye control off', 'pause eye tracking', 'disable eye tracking', 'stop eye tracking', 'eye tracking off', 'pause cursor', 'disable cursor', 'stop cursor', 'turn off cursor', 'cursor off', 'pause mouse', 'disable mouse', 'stop mouse', 'mouse off', 'gaze band karo', 'cursor band karo', 'mouse band karo'])) {
+            rememberHandledCommand(command);
+            if (state.scrollTimer) stopScroll();
             controlGaze(false);
             return;
         }
 
         if (commandMatches(command, ['resume gaze', 'enable gaze', 'start gaze', 'turn on gaze', 'gaze on', 'resume gaze control', 'enable gaze control', 'start gaze control', 'turn on gaze control', 'resume eye control', 'enable eye control', 'start eye control', 'eye control on', 'resume eye tracking', 'enable eye tracking', 'start eye tracking', 'eye tracking on', 'resume cursor', 'enable cursor', 'start cursor', 'turn on cursor', 'cursor on', 'resume mouse', 'enable mouse', 'start mouse', 'mouse on', 'gaze chalu karo', 'cursor chalu karo', 'mouse chalu karo'])) {
+            rememberHandledCommand(command);
+            if (state.scrollTimer) stopScroll();
             controlGaze(true);
             return;
         }
 
         if (commandMatches(command, ['pause system', 'stop system'])) {
+            rememberHandledCommand(command);
+            if (state.scrollTimer) stopScroll();
             const pauseBtn = document.getElementById('pauseBtn');
             if (pauseBtn) pauseBtn.click();
             setStatus('System paused', 'listening');
@@ -577,6 +620,8 @@
         }
 
         if (commandMatches(command, ['resume system', 'start system', 'continue system'])) {
+            rememberHandledCommand(command);
+            if (state.scrollTimer) stopScroll();
             const pauseBtn = document.getElementById('pauseBtn');
             if (pauseBtn && pauseBtn.classList.contains('active')) {
                 pauseBtn.click();
@@ -591,15 +636,25 @@
         }
 
         if (commandMatches(command, ['go back', 'back', 'previous page', 'wapas', 'wapis', 'peeche', 'piche', 'back jao'])) {
+            rememberHandledCommand(command);
+            if (state.scrollTimer) stopScroll();
             window.history.length > 1 ? window.history.back() : navigateTo('/');
             return;
         }
 
         const routePath = getRoutePath(command);
         if (routePath) {
+            rememberHandledCommand(command);
+            if (state.scrollTimer) stopScroll();
             navigateTo(routePath);
             return;
         }
+
+        if (interim) {
+            return;
+        }
+
+        rememberHandledCommand(command);
 
         if (commandMatches(command, ['clear', 'clear text', 'clear screen', 'delete all', 'erase text', 'remove text', 'text clear karo', 'sab delete karo', 'sab hatao'])) {
             clearCommunicationText();
@@ -629,8 +684,15 @@
             return;
         }
 
+        if (explicitKeyCommand && pressCommunicationKey(keyCommand)) {
+            return;
+        }
+
         if (systemKeyCommands[keyCommand]) {
             const key = systemKeyCommands[keyCommand];
+            if (pressCommunicationKey(keyCommand)) {
+                return;
+            }
             if (key === 'enter') {
                 updateCommunicationText('\n');
             } else if (key === 'space') {
@@ -695,6 +757,7 @@
         try {
             state.recognition.onstart = null;
             state.recognition.onresult = null;
+            state.recognition.onerror = null;
             state.recognition.onend = null;
             state.recognition.abort();
         } catch (error) {
@@ -703,6 +766,8 @@
         state.recognition = null;
         state.active = false;
         state.starting = false;
+        state.recognitionStartingAt = 0;
+        state.recognitionStartedAt = 0;
     }
 
     function recoverFromAbort() {
@@ -722,7 +787,7 @@
         }, delay);
     }
 
-    function recreateRecognition(reason) {
+    function recreateRecognition(reason, delay) {
         if (!state.desired || state.recovering) return;
         console.warn('Global voice recreating recognizer:', reason);
         state.recovering = true;
@@ -733,7 +798,7 @@
             if (state.desired) {
                 tryStartRecognition(true);
             }
-        }, 350);
+        }, delay || 350);
     }
 
     function startWatchdog() {
@@ -741,8 +806,13 @@
         state.watchdogTimer = setInterval(function () {
             if (!state.desired || document.hidden) return;
             const now = Date.now();
+            const startingFor = state.recognitionStartingAt ? now - state.recognitionStartingAt : 0;
             const idleFor = state.lastVoiceActivityAt ? now - state.lastVoiceActivityAt : 0;
             const runningFor = state.recognitionStartedAt ? now - state.recognitionStartedAt : 0;
+            if (state.starting && startingFor > STARTING_TIMEOUT_MS) {
+                recreateRecognition('start-timeout-' + startingFor + 'ms');
+                return;
+            }
             if (state.active && idleFor > STALE_ACTIVE_TIMEOUT_MS) {
                 recreateRecognition('stale-active-' + idleFor + 'ms');
                 return;
@@ -761,7 +831,7 @@
         clearRestartTimer();
         state.restartTimer = setTimeout(function () {
             state.restartTimer = null;
-            if (!state.desired || state.active || state.starting || !state.recognition) return;
+            if (!state.desired || state.active || state.starting) return;
             tryStartRecognition(true);
         }, delay || 700);
     }
@@ -771,15 +841,17 @@
 
         state.recognition = new SpeechRecognition();
         state.recognition.continuous = true;
-        state.recognition.interimResults = false;
+        state.recognition.interimResults = true;
         state.recognition.maxAlternatives = 1;
         state.recognition.lang = 'en-US';
 
         state.recognition.onstart = function () {
             state.active = true;
             state.starting = false;
+            state.recognitionStartingAt = 0;
             state.ignoreAbortUntil = 0;
             state.abortBackoffMs = 600;
+            state.startFailureCount = 0;
             state.recognitionStartedAt = Date.now();
             markVoiceActivity('start');
             setStatus('Listening', 'listening');
@@ -794,6 +866,7 @@
                     const interim = transcript.trim();
                     if (interim) {
                         state.lastInterimTranscript = interim;
+                        handleCommand(interim, {interim: true});
                     }
                     continue;
                 }
@@ -816,6 +889,7 @@
             }
             markVoiceActivity('error', event.error);
             state.starting = false;
+            state.recognitionStartingAt = 0;
 
             if (expectedAbort) {
                 state.active = false;
@@ -868,6 +942,7 @@
             markVoiceActivity('end');
             state.active = false;
             state.starting = false;
+            state.recognitionStartingAt = 0;
             if (state.desired) {
                 setStatus('Listening', 'listening');
                 restartRecognitionSoon(120);
@@ -880,7 +955,7 @@
 
     function tryStartRecognition(isRestart) {
         if (!state.supported) {
-            setStatus('Voice not supported in this browser', 'unsupported');
+            setStatus(supportMessage(), 'unsupported');
             setVoiceButton();
             return false;
         }
@@ -896,6 +971,7 @@
         clearRestartTimer();
         state.starting = true;
         state.desired = true;
+        state.recognitionStartingAt = Date.now();
         state.lastVoiceActivityAt = Date.now();
         startWatchdog();
         setStatus(isRestart ? 'Listening' : 'Voice starting', 'listening');
@@ -906,9 +982,18 @@
             return true;
         } catch (error) {
             state.starting = false;
+            state.recognitionStartingAt = 0;
+            state.active = false;
+            state.startFailureCount += 1;
+            state.stats.startFailures += 1;
+            state.stats.lastError = error && (error.name || error.message) ? (error.name || error.message) : 'start-failed';
             console.warn('Global voice start failed:', error);
             if (state.desired) {
-                restartRecognitionSoon(900);
+                const retryDelay = Math.min(
+                    MAX_START_FAILURE_RETRY_MS,
+                    START_FAILURE_RETRY_MS * state.startFailureCount
+                );
+                recreateRecognition('start-failed-' + state.stats.lastError, retryDelay);
             }
             return false;
         }
@@ -923,6 +1008,8 @@
         state.active = false;
         state.starting = false;
         state.recovering = false;
+        state.recognitionStartingAt = 0;
+        state.startFailureCount = 0;
         clearRestartTimer();
         clearWatchdogTimer();
         stopScroll();
@@ -943,6 +1030,11 @@
 
         voiceBtn.addEventListener('click', function (event) {
             event.preventDefault();
+            if (state.desired) {
+                setStatus('Restarting voice', 'listening');
+                recreateRecognition('manual-button-restart');
+                return;
+            }
             start();
         });
         setVoiceButton();
@@ -959,6 +1051,7 @@
         isSupported: function () {
             return state.supported;
         },
+        supportMessage: supportMessage,
         diagnostics: function () {
             const now = Date.now();
             return {
@@ -967,7 +1060,9 @@
                 starting: state.starting,
                 recovering: state.recovering,
                 lastVoiceActivityAge: state.lastVoiceActivityAt ? now - state.lastVoiceActivityAt : null,
+                recognitionStartingAge: state.recognitionStartingAt ? now - state.recognitionStartingAt : null,
                 recognitionAge: state.recognitionStartedAt ? now - state.recognitionStartedAt : null,
+                startFailureCount: state.startFailureCount,
                 stats: Object.assign({}, state.stats)
             };
         }
@@ -980,7 +1075,7 @@
             start();
             return;
         }
-        setStatus(state.supported ? 'Click Voice to start' : 'Voice not supported in this browser', state.supported ? 'idle' : 'unsupported');
+        setStatus(state.supported ? 'Click Voice to start' : supportMessage(), state.supported ? 'idle' : 'unsupported');
     });
 
     window.addEventListener('beforeunload', stopScroll);
